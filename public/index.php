@@ -40,13 +40,13 @@ $app->get('/users/new', function ($request, $response) {
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('createUser');
 
-$app->post('/users', function ($request, $response) use ($users) {
+$app->post('/users', function ($request, $response) use ($users, $router) {
     // $validator = new Validator();
     $user = $request->getParsedBodyParam('user');
     $user['id'] = count($users) + 1;
     $users[] = $user;
     file_put_contents(__DIR__ . "/../database.json", json_encode($users));
-    return $response->withRedirect('/users', 302);
+    return $response->withRedirect($router->urlFor('showUsers'), 302);
     // $errors = $validator->validate($user);
     // if (count($errors) === 0) {
     //     $repo->save($user);
