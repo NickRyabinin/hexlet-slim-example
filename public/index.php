@@ -15,6 +15,7 @@ $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 
 $users = ['mike', 'mishel', 'adel', 'keks', 'kamila'];
+$repo = json_decode(file_get_contents(__DIR__ . "/../database.json"), true);
 
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
@@ -31,8 +32,30 @@ $app->get('/users', function ($request, $response) use ($users) {
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
 });
 
-$app->post('/users', function ($request, $response) {
-    return $response->withStatus(302);
+$app->get('/users/new', function ($request, $response) {
+    $params = [
+        'user' => ['nickname' => '', 'email' => ''],
+        'errors' => []
+    ];
+    return $this->get('renderer')->render($response, "users/new.phtml", $params);
+});
+
+$app->post('/users', function ($request, $response) use ($repo) {
+    // $validator = new Validator();
+    $user = $request->getParsedBodyParam('user');
+    $repo[] = $user;
+    file_put_contents(__DIR__ . "/../database.json", json_encode($repo));
+    return $response->withRedirect('/users', 302);
+    // $errors = $validator->validate($user);
+    // if (count($errors) === 0) {
+    //     $repo->save($user);
+    //     return $response->withRedirect('/users', 302);
+    // }
+    // $params = [
+    //     'user' => $user,
+    //     'errors' => $errors
+    // ];
+    // return $this->get('renderer')->render($response, "users/new.phtml", $params);
 });
 
 $app->get('/courses/{id}', function ($request, $response, array $args) {
