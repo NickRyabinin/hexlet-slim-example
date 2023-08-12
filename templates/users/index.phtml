@@ -6,7 +6,7 @@
 <ul>
   <?php foreach ($filteredUsers as $filteredUser): ?>
       <li>
-          <?= htmlspecialchars($filteredUser) ?>
+          <?= htmlspecialchars($filteredUser['nickname']) ?>
       </li>
   <?php endforeach ?>
 </ul>
