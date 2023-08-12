@@ -13,6 +13,7 @@ $container->set('renderer', function () {
 });
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
+$router = $app->getRouteCollector()->getRouteParser();
 
 $users = json_decode(file_get_contents(__DIR__ . "/../database.json"), true) ?? [];
 
@@ -21,7 +22,7 @@ $app->get('/', function ($request, $response) {
     return $response;
     // Благодаря пакету slim/http этот же код можно записать короче
     // return $response->write('Welcome to Slim!');
-});
+})->setName('main');
 
 $app->get('/users', function ($request, $response) use ($users) {
     $term = $request->getQueryParam('term');
@@ -29,7 +30,7 @@ $app->get('/users', function ($request, $response) use ($users) {
     $filteredUsers = array_filter($users, $callback);
     $params = ['filteredUsers' => $filteredUsers, 'term' => $term];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
-});
+})->setName('showUsers');
 
 $app->get('/users/new', function ($request, $response) {
     $params = [
@@ -37,7 +38,7 @@ $app->get('/users/new', function ($request, $response) {
         'errors' => []
     ];
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
-});
+})->setName('createUser');
 
 $app->post('/users', function ($request, $response) use ($users) {
     // $validator = new Validator();
@@ -56,12 +57,7 @@ $app->post('/users', function ($request, $response) use ($users) {
     //     'errors' => $errors
     // ];
     // return $this->get('renderer')->render($response, "users/new.phtml", $params);
-});
-
-$app->get('/courses/{id}', function ($request, $response, array $args) {
-    $id = htmlspecialchars($args['id']);
-    return $response->write("Course id: {$id}");
-});
+})->setName('saveUser');
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($users) {
     $params = ['id' => $args['id'], 'nickname' => $users[$args['id'] - 1]['nickname']];
@@ -69,6 +65,6 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($users) {
     // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
     // $this в Slim это контейнер зависимостей
     return $this->get('renderer')->render($response, 'users/show.phtml', $params);
-});
+})->setName('showUser');
 
 $app->run();
