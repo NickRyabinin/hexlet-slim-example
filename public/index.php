@@ -1,16 +1,21 @@
 <?php
 
-// Подключение автозагрузки через composer
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
+
+session_start();
 
 $container = new Container();
 $container->set('renderer', function () {
     // Параметром передается базовая директория, в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
+$container->set('flash', function () {
+    return new \Slim\Flash\Messages();
+});
+
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
 $router = $app->getRouteCollector()->getRouteParser();
@@ -32,7 +37,8 @@ $app->get('/users', function ($request, $response) use ($users) {
     $term = $request->getQueryParam('term');
     $callback = fn($user) => str_contains($user['nickname'], $term);
     $filteredUsers = array_filter($users, $callback);
-    $params = ['filteredUsers' => $filteredUsers, 'term' => $term];
+    $messages = $this->get('flash')->getMessages();
+    $params = ['filteredUsers' => $filteredUsers, 'term' => $term, 'flash' => $messages];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
 })->setName('showUsers');
 
@@ -50,6 +56,7 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     $user['id'] = count($users) + 1;
     $users[] = $user;
     file_put_contents(__DIR__ . "/../database.json", json_encode($users));
+    $this->get('flash')->addMessage('success', 'User was added successfully');
     return $response->withRedirect($router->urlFor('showUsers'), 302);
     // $errors = $validator->validate($user);
     // if (count($errors) === 0) {
