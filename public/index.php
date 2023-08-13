@@ -24,6 +24,10 @@ $app->get('/', function ($request, $response) {
     // return $response->write('Welcome to Slim!');
 })->setName('main');
 
+$app->get('/user404', function ($request, $response) {
+    return $response->write('This user does not exist!');
+})->setName('404');
+
 $app->get('/users', function ($request, $response) use ($users) {
     $term = $request->getQueryParam('term');
     $callback = fn($user) => str_contains($user['nickname'], $term);
@@ -59,12 +63,26 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     // return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('saveUser');
 
-$app->get('/users/{id}', function ($request, $response, $args) use ($users) {
-    $params = ['id' => $args['id'], 'nickname' => $users[$args['id'] - 1]['nickname']];
-    // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
-    // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
-    // $this в Slim это контейнер зависимостей
-    return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+$app->get('/users/{id}', function ($request, $response, $args) use ($users, $router) {
+    $id = $args['id'];
+    if (search($id, $users)) {
+        $params = ['id' => $id, 'nickname' => $users[$id - 1]['nickname']];
+        // Указанный путь считается относительно базовой директории для шаблонов, заданной на этапе конфигурации
+        // $this доступен внутри анонимной функции благодаря https://php.net/manual/ru/closure.bindto.php
+        // $this в Slim это контейнер зависимостей
+        return $this->get('renderer')->render($response, 'users/show.phtml', $params);
+    }
+    return $response->withRedirect($router->urlFor('404'), 302);
 })->setName('showUser');
 
 $app->run();
+
+function search(int $id, array $users): bool
+{
+    foreach ($users as $user) {
+        if ($user['id'] === $id) {
+            return true;
+        }
+    }
+    return false;
+}
