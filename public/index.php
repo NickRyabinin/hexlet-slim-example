@@ -4,12 +4,12 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
 use DI\Container;
+use Slim\Middleware\MethodOverrideMiddleware;
 
 session_start();
 
 $container = new Container();
 $container->set('renderer', function () {
-    // Параметром передается базовая директория, в которой будут храниться шаблоны
     return new \Slim\Views\PhpRenderer(__DIR__ . '/../templates');
 });
 $container->set('flash', function () {
@@ -18,6 +18,7 @@ $container->set('flash', function () {
 
 $app = AppFactory::createFromContainer($container);
 $app->addErrorMiddleware(true, true, true);
+$app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $users = json_decode(file_get_contents(__DIR__ . "/../database.json"), true) ?? [];
@@ -25,8 +26,6 @@ $users = json_decode(file_get_contents(__DIR__ . "/../database.json"), true) ?? 
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
     return $response;
-    // Благодаря пакету slim/http этот же код можно записать короче
-    // return $response->write('Welcome to Slim!');
 })->setName('main');
 
 $app->get('/user404', function ($request, $response) {
@@ -51,10 +50,9 @@ $app->get('/users/new', function ($request, $response) {
 })->setName('createUser');
 
 $app->post('/users', function ($request, $response) use ($users, $router) {
-
     $user = $request->getParsedBodyParam('user');
     $errors = validate($user);
-    
+
     if (count($errors) === 0) {
         $user['id'] = count($users) + 1;
         $users[] = $user;
@@ -69,18 +67,49 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
 
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($users, $router)  {
+    $id = $args['id'];
+    $editableUser = $users[$id - 1];
+    $data = $request->getParsedBodyParam('user');
+
+    $errors = validate($data);
+
+    if (count($errors) === 0) {
+        $editableUser['nickname'] = $data['nickname'];
+        $editableUser['email'] = $data['email'];
+        $users[$id - 1] = $editableUser;
+        file_put_contents(__DIR__ . "/../database.json", json_encode($users));
+        $this->get('flash')->addMessage('success', 'User has been updated');
+        return $response->withRedirect($router->urlFor('showUsers'), 302);
+    }
+
+    $params = ['user' => $editableUser,'errors' => $errors];
+
+    $response = $response->withStatus(422);
+    return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+});
+
 $app->get('/users/{id}', function ($request, $response, $args) use ($users, $router) {
     $id = $args['id'];
-    if (search($id, $users)) {
+    if (isUserExists($id, $users)) {
         $params = ['id' => $id, 'nickname' => $users[$id - 1]['nickname']];
         return $this->get('renderer')->render($response, 'users/show.phtml', $params);
     }
     return $response->withRedirect($router->urlFor('404'), 302);
 })->setName('showUser');
 
+$app->get('/users/{id}/edit', function ($request, $response, array $args) use ($users, $router) {
+    $id = $args['id'];
+    if (isUserExists($id, $users)) {
+        $params = ['user' => $users[$id - 1], 'errors' => []];
+        return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
+    }
+    return $response->withRedirect($router->urlFor('404'), 302);
+})->setName('editUser');
+
 $app->run();
 
-function search(int $id, array $users): bool
+function isUserExists(int $id, array $users): bool
 {
     foreach ($users as $user) {
         if ($user['id'] === $id) {
