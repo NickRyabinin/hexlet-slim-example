@@ -12,11 +12,14 @@
   <input type="submit" value="Search" />
 </form>
 <hr>
+<div>
+  <p>Нажмите на пользователя для его просмотра</p> 
+</div>
 <ul>
   <?php foreach ($filteredUsers as $filteredUser): ?>
     <?php if (!isset($filteredUser['status'])): ?>
       <li>
-        <?= htmlspecialchars($filteredUser['nickname']) ?>
+        <a href="/users/<?= htmlspecialchars($filteredUser['id']) ?>"><?= htmlspecialchars($filteredUser['nickname']) ?></a>
       </li>
     <?php endif ?>
   <?php endforeach ?>
