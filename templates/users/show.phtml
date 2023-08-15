@@ -1,2 +1,10 @@
-<p>id = <?= htmlspecialchars($id) ?></p>
-<p>nickname = <?= htmlspecialchars($nickname) ?></p>
+<p>id = <?= htmlspecialchars($user['id']) ?></p>
+<p>nickname = <?= htmlspecialchars($user['nickname']) ?></p>
+<hr>
+<form action="/users/<?= $user['id'] ?>/edit" method="get">
+  <input type="submit" value="Edit user">
+</form>
+<form action="/users/<?= $user['id'] ?>" method="post">
+  <input type="hidden" name="_METHOD" value="DELETE">
+  <input type="submit" value="Delete user">
+</form>
