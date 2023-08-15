@@ -1,1 +1,53 @@
-[{"nickname":"Vasya","email":"h@m.v","id":1},{"nickname":"Galya","email":"example@somewhat.org","id":2},{"nickname":"AlibabaY","email":"sezamKa@arabia.gov","id":3},{"nickname":"Gulchatai","email":"white@sun","id":4},{"nickname":"incognito","email":"none@none","id":5},{"nickname":"Mahmud","email":"abbas@karabas.zoo","id":6},{"nickname":"Tuzik","email":"grelka@porvu.kak","id":7},{"nickname":"Test","email":"test@test.d","id":8},{"nickname":"Somebody","email":"somewhat@somehow.somewhere","id":9},{"nickname":"Ivan","email":"tsar@imperium.space","id":10}]
+[
+    {
+        "nickname": "Vasya",
+        "email": "h@m.v",
+        "id": 1
+    },
+    {
+        "nickname": "Galya",
+        "email": "example@somewhat.org",
+        "id": 2
+    },
+    {
+        "nickname": "AlibabaY",
+        "email": "sezamKa@arabia.gov",
+        "id": 3
+    },
+    {
+        "nickname": "Gulchatai",
+        "email": "white@sun",
+        "id": 4
+    },
+    {
+        "nickname": "incognito",
+        "email": "none@none",
+        "id": 5
+    },
+    {
+        "nickname": "Mahmud",
+        "email": "abbas@karabas.zoo",
+        "id": 6
+    },
+    {
+        "nickname": "Tuzik",
+        "email": "grelka@porvu.kak",
+        "id": 7
+    },
+    {
+        "nickname": "Test",
+        "email": "test@test.d",
+        "id": 8,
+        "status": "deleted"
+    },
+    {
+        "nickname": "Somebody",
+        "email": "somewhat@somehow.somewhere",
+        "id": 9
+    },
+    {
+        "nickname": "Ivanco",
+        "email": "tsar@imperium.space",
+        "id": 10
+    }
+]
