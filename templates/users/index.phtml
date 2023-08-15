@@ -14,8 +14,10 @@
 <hr>
 <ul>
   <?php foreach ($filteredUsers as $filteredUser): ?>
+    <?php if (!isset($filteredUser['status'])): ?>
       <li>
-          <?= htmlspecialchars($filteredUser['nickname']) ?>
+        <?= htmlspecialchars($filteredUser['nickname']) ?>
       </li>
+    <?php endif ?>
   <?php endforeach ?>
 </ul>
