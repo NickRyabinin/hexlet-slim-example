@@ -46,8 +46,14 @@
         "id": 9
     },
     {
-        "nickname": "Ivanco",
+        "nickname": "Ivanec",
         "email": "tsar@imperium.space",
         "id": 10
+    },
+    {
+        "nickname": "balda",
+        "email": "com@org",
+        "id": 11,
+        "status": "deleted"
     }
 ]
