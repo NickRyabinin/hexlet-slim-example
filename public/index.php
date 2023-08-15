@@ -56,7 +56,7 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     if (count($errors) === 0) {
         $user['id'] = count($users) + 1;
         $users[] = $user;
-        file_put_contents(__DIR__ . "/../database.json", json_encode($users));
+        file_put_contents(__DIR__ . "/../database.json", json_encode($users, JSON_PRETTY_PRINT));
         $this->get('flash')->addMessage('success', 'User was added successfully');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
@@ -67,7 +67,7 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
 
-$app->patch('/users/{id}', function ($request, $response, array $args) use ($users, $router)  {
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($users, $router) {
     $id = $args['id'];
     $editableUser = $users[$id - 1];
     $data = $request->getParsedBodyParam('user');
@@ -78,7 +78,7 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
         $editableUser['nickname'] = $data['nickname'];
         $editableUser['email'] = $data['email'];
         $users[$id - 1] = $editableUser;
-        file_put_contents(__DIR__ . "/../database.json", json_encode($users));
+        file_put_contents(__DIR__ . "/../database.json", json_encode($users, JSON_PRETTY_PRINT));
         $this->get('flash')->addMessage('success', 'User has been updated');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
@@ -89,10 +89,21 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 });
 
+$app->delete('/users/{id}', function ($request, $response, array $args) use ($users, $router) {
+    $id = $args['id'];
+    $deletableUser = $users[$id - 1];
+    $deletableUser['status'] = 'deleted';
+    $users[$id - 1] = $deletableUser;
+    file_put_contents(__DIR__ . "/../database.json", json_encode($users, JSON_PRETTY_PRINT));
+    $this->get('flash')->addMessage('success', 'User has been deleted');
+    return $response->withRedirect($router->urlFor('showUsers'));
+});
+
 $app->get('/users/{id}', function ($request, $response, $args) use ($users, $router) {
     $id = $args['id'];
+    $user = $users[$id - 1];
     if (isUserExists($id, $users)) {
-        $params = ['id' => $id, 'nickname' => $users[$id - 1]['nickname']];
+        $params = ['user' => $user];
         return $this->get('renderer')->render($response, 'users/show.phtml', $params);
     }
     return $response->withRedirect($router->urlFor('404'), 302);
