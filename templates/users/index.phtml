@@ -21,10 +21,12 @@
 </div>
 <ul>
   <?php foreach ($filteredUsers as $filteredUser): ?>
-    <?php if (!isset($filteredUser['status'])): ?>
-      <li>
-        <a href="/users/<?= htmlspecialchars($filteredUser['id']) ?>"><?= htmlspecialchars($filteredUser['nickname']) ?></a>
-      </li>
-    <?php endif ?>
+    <li>
+      <a href="/users/<?= htmlspecialchars($filteredUser['id']) ?>"><?= htmlspecialchars($filteredUser['nickname']) ?></a>
+    </li>
   <?php endforeach ?>
 </ul>
+<hr>
+<div>
+<a href="?page=<?= $page < 2 ? 1 : $page - 1 ?>">Prev (-5)</a> <a href="?page=<?= $page + 1 ?>">Next (+5)</a>
+</div>
