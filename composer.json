@@ -1,11 +1,11 @@
 {
-    "name": "nick_ryabinin/slim_crud",
+    "name": "nick_ryabinin/user_crud",
     "description": "Simple CRUD of entity 'User' made with Slim microframework",
     "type": "project",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-          "Slim\\Crud\\": "src"
+          "User\\Crud\\": "src"
         }
     },
     "require": {
