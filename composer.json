@@ -1,4 +1,13 @@
 {
+    "name": "nick_ryabinin/slim_crud",
+    "description": "Simple CRUD of entity 'User' made with Slim microframework",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+          "Slim\\Crud\\": "src"
+        }
+    },
     "require": {
         "slim/slim": "^4.11",
         "slim/psr7": "^1.6",
@@ -6,5 +15,11 @@
         "slim/php-view": "^3.2",
         "php-di/php-di": "^7.0",
         "slim/flash": "^0.4.0"
-    }
+    },
+    "authors": [
+        {
+            "name": "Николай Рябинин",
+            "email": "rnn2002@mail.ru"
+        }
+    ]
 }
