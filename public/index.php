@@ -5,6 +5,7 @@ require __DIR__ . '/../vendor/autoload.php';
 use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
+use User\Crud\Database;
 
 session_start();
 
@@ -21,7 +22,8 @@ $app->addErrorMiddleware(true, true, true);
 $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
-$users = json_decode(base64_decode(file_get_contents(__DIR__ . "/../database.json")), true) ?? [];
+$database = new Database();
+// $users = $database->loadUsers();
 
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
@@ -32,8 +34,9 @@ $app->get('/user404', function ($request, $response) {
     return $response->write('This user does not exist!');
 })->setName('404');
 
-$app->get('/users', function ($request, $response) use ($users) {
+$app->get('/users', function ($request, $response) use ($database) {
     $term = $request->getQueryParam('term');
+    $users = $database->loadUsers();
     $callback = fn($user) => str_contains($user['nickname'], $term);
     $allFilteredUsers = array_filter($users, $callback);
     $messages = $this->get('flash')->getMessages();
@@ -53,14 +56,15 @@ $app->get('/users/new', function ($request, $response) {
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('createUser');
 
-$app->post('/users', function ($request, $response) use ($users, $router) {
+$app->post('/users', function ($request, $response) use ($database, $router) {
     $user = $request->getParsedBodyParam('user');
     $errors = validate($user);
+    $users = $database->loadUsers();
 
     if (count($errors) === 0) {
         $user['id'] = ($users[count($users) - 1]['id'] ?? 0) + 1;
         $users[] = $user;
-        file_put_contents(__DIR__ . "/../database.json", base64_encode(json_encode($users, JSON_PRETTY_PRINT)));
+        $database->saveUsers($users);
         $this->get('flash')->addMessage('success', 'User was added successfully');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
@@ -71,19 +75,20 @@ $app->post('/users', function ($request, $response) use ($users, $router) {
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
 
-$app->patch('/users/{id}', function ($request, $response, array $args) use ($users, $router) {
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($database, $router) {
     $id = $args['id'];
-    $editableUser = findUser($id, $users);
+    $editableUser = $database->findUser($id);
+    $users = $database->loadUsers();
     $data = $request->getParsedBodyParam('user');
 
     $errors = validate($data);
 
     if (count($errors) === 0) {
+        $editableUserKey = array_search($editableUser, $users);
         $editableUser['nickname'] = $data['nickname'];
         $editableUser['email'] = $data['email'];
-        $editableUserKey = array_search($editableUser, $users);
         $users[$editableUserKey] = $editableUser;
-        file_put_contents(__DIR__ . "/../database.json", base64_encode(json_encode($users, JSON_PRETTY_PRINT)));
+        $database->saveUsers($users);
         $this->get('flash')->addMessage('success', 'User has been updated');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
@@ -94,18 +99,19 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($use
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 });
 
-$app->delete('/users/{id}', function ($request, $response, array $args) use ($users, $router) {
+$app->delete('/users/{id}', function ($request, $response, array $args) use ($database, $router) {
     $id = $args['id'];
-    $deletableUser = findUser($id, $users);
+    $deletableUser = $database->findUser($id);
+    $users = $database->loadUsers();
     unset($users[array_search($deletableUser, $users)]);
-    file_put_contents(__DIR__ . "/../database.json", base64_encode(json_encode([...$users], JSON_PRETTY_PRINT)));
+    $database->saveUsers([...$users]);
     $this->get('flash')->addMessage('success', 'User has been deleted');
     return $response->withRedirect($router->urlFor('showUsers'));
 });
 
-$app->get('/users/{id}', function ($request, $response, $args) use ($users, $router) {
+$app->get('/users/{id}', function ($request, $response, $args) use ($database, $router) {
     $id = $args['id'];
-    $user = findUser($id, $users);
+    $user = $database->findUser($id);
     if ($user) {
         $params = ['user' => $user];
         return $this->get('renderer')->render($response, 'users/show.phtml', $params);
@@ -113,9 +119,9 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($users, $rou
     return $response->withRedirect($router->urlFor('404'), 302);
 })->setName('showUser');
 
-$app->get('/users/{id}/edit', function ($request, $response, array $args) use ($users, $router) {
+$app->get('/users/{id}/edit', function ($request, $response, array $args) use ($database, $router) {
     $id = $args['id'];
-    $user = findUser($id, $users);
+    $user = $database->findUser($id);
     if ($user) {
         $params = ['user' => $user, 'errors' => []];
         return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
@@ -135,14 +141,4 @@ function validate(array $user): array
         $errors['email'] = "Can't be blank";
     }
     return $errors;
-}
-
-function findUser(int $id, array $users): array | false
-{
-    foreach ($users as $user) {
-        if ($user['id'] === $id) {
-            return $user;
-        }
-    }
-    return false;
 }
