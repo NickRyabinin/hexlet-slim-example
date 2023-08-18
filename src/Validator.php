@@ -4,7 +4,7 @@ namespace User\Crud;
 
 class Validator
 {
-    public function validate(array $user): array
+    public function validate(array $user, array $users): array
     {
         $errors = [];
         if (mb_strlen($user['nickname']) < 4 || mb_strlen($user['nickname']) > 20) {
@@ -12,6 +12,11 @@ class Validator
         }
         if ($user['email'] === '') {
             $errors['email'] = "Can't be blank";
+        }
+        foreach ($users as $currentUser) {
+            if ($user['email'] === $currentUser['email']) {
+                $errors['email'] = "Some user already used this email. Email must be unique!";
+            }
         }
         return $errors;
     }
