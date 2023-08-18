@@ -6,6 +6,7 @@ use Slim\Factory\AppFactory;
 use DI\Container;
 use Slim\Middleware\MethodOverrideMiddleware;
 use User\Crud\Database;
+use User\Crud\Validator;
 
 session_start();
 
@@ -23,7 +24,7 @@ $app->add(MethodOverrideMiddleware::class);
 $router = $app->getRouteCollector()->getRouteParser();
 
 $database = new Database();
-// $users = $database->loadUsers();
+$validator = new Validator();
 
 $app->get('/', function ($request, $response) {
     $response->getBody()->write('Welcome to Slim!');
@@ -56,9 +57,9 @@ $app->get('/users/new', function ($request, $response) {
     return $this->get('renderer')->render($response, "users/new.phtml", $params);
 })->setName('createUser');
 
-$app->post('/users', function ($request, $response) use ($database, $router) {
+$app->post('/users', function ($request, $response) use ($database, $router, $validator) {
     $user = $request->getParsedBodyParam('user');
-    $errors = validate($user);
+    $errors = $validator->validate($user);
     $users = $database->loadUsers();
 
     if (count($errors) === 0) {
@@ -75,13 +76,13 @@ $app->post('/users', function ($request, $response) use ($database, $router) {
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
 
-$app->patch('/users/{id}', function ($request, $response, array $args) use ($database, $router) {
+$app->patch('/users/{id}', function ($request, $response, array $args) use ($database, $router, $validator) {
     $id = $args['id'];
     $editableUser = $database->findUser($id);
     $users = $database->loadUsers();
     $data = $request->getParsedBodyParam('user');
 
-    $errors = validate($data);
+    $errors = $validator->validate($data);
 
     if (count($errors) === 0) {
         $editableUserKey = array_search($editableUser, $users);
@@ -130,15 +131,3 @@ $app->get('/users/{id}/edit', function ($request, $response, array $args) use ($
 })->setName('editUser');
 
 $app->run();
-
-function validate(array $user): array
-{
-    $errors = [];
-    if (mb_strlen($user['nickname']) < 4 || mb_strlen($user['nickname']) > 20) {
-        $errors['nickname'] = "User's nickname must be between 4 and 20 symbols";
-    }
-    if ($user['email'] === '') {
-        $errors['email'] = "Can't be blank";
-    }
-    return $errors;
-}
