@@ -58,9 +58,9 @@ $app->get('/users/new', function ($request, $response) {
 })->setName('createUser');
 
 $app->post('/users', function ($request, $response) use ($database, $router, $validator) {
-    $user = $request->getParsedBodyParam('user');
-    $errors = $validator->validate($user);
     $users = $database->loadUsers();
+    $user = $request->getParsedBodyParam('user');
+    $errors = $validator->validate($user, $users);
 
     if (count($errors) === 0) {
         $user['id'] = ($users[count($users) - 1]['id'] ?? 0) + 1;
@@ -82,7 +82,7 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($dat
     $users = $database->loadUsers();
     $data = $request->getParsedBodyParam('user');
 
-    $errors = $validator->validate($data);
+    $errors = $validator->validate($data, $users);
 
     if (count($errors) === 0) {
         $editableUserKey = array_search($editableUser, $users);
