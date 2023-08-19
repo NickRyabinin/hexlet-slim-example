@@ -13,8 +13,8 @@ class Validator
         if ($user['email'] === '') {
             $errors['email'] = "Can't be blank";
         }
-        foreach ($users as $currentUser) {
-            if ($user['email'] === $currentUser['email']) {
+        foreach ($users as $existedUser) {
+            if ($user['email'] === $existedUser['email']) {
                 $errors['email'] = "Some user already used this email. Email must be unique!";
             }
         }
