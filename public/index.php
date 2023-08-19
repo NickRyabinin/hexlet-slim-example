@@ -45,12 +45,12 @@ $app->post('/session', function ($request, $response) use ($admins, $router) {
     $isFormCompleted = !empty($userCredentials['name']) && !empty($userCredentials['password']);
     if ($isFormCompleted) {
         $isUserAuthorized = false;
-        foreach ($admins as $user) {
+        foreach ($admins as $admin) {
             if (
-                $user['name'] === $userCredentials['name'] &&
-                $user['password'] === hash('sha256', $userCredentials['password'])
+                $admin['name'] === $userCredentials['name'] &&
+                $admin['password'] === hash('sha256', $userCredentials['password'])
             ) {
-                $_SESSION['user'] = $user;
+                $_SESSION['user'] = $admin;
                 $isUserAuthorized = true;
                 break;
             }
@@ -73,9 +73,14 @@ $app->get('/user404', function ($request, $response) {
     return $response->write('This user does not exist!');
 })->setName('404');
 
-$app->get('/users', function ($request, $response) use ($database) {
+$app->get('/users', function ($request, $response) use ($database, $router) {
+    if ($_SESSION['user'] === null) {
+        $this->get('flash')->addMessage('error', 'Not logged in!');
+        return $response->withRedirect($router->urlFor('login'), 302);
+    }
     $term = $request->getQueryParam('term');
     $users = $database->loadUsers();
+    $usersTotal = count($users);
     $callback = fn($user) => str_contains($user['nickname'], $term);
     $allFilteredUsers = array_filter($users, $callback);
     $messages = $this->get('flash')->getMessages();
@@ -83,11 +88,18 @@ $app->get('/users', function ($request, $response) use ($database) {
     $per = 5;
     $offset = ($page - 1) * $per;
     $filteredUsers = array_slice($allFilteredUsers, $offset, $per);
-    $params = ['filteredUsers' => $filteredUsers, 'term' => $term, 'flash' => $messages, 'page' => $page];
+    $params = [
+        'filteredUsers' => $filteredUsers, 'term' => $term, 'flash' => $messages,
+        'page' => $page, 'usersTotal' => $usersTotal
+    ];
     return $this->get('renderer')->render($response, 'users/index.phtml', $params);
 })->setName('showUsers');
 
-$app->get('/users/new', function ($request, $response) {
+$app->get('/users/new', function ($request, $response) use ($router) {
+    if ($_SESSION['user'] === null) {
+        $this->get('flash')->addMessage('error', 'Not logged in!');
+        return $response->withRedirect($router->urlFor('login'), 302);
+    }
     $params = [
         'user' => ['id' => '', 'nickname' => '', 'email' => ''],
         'errors' => []
@@ -99,7 +111,6 @@ $app->post('/users', function ($request, $response) use ($database, $router, $va
     $users = $database->loadUsers();
     $user = $request->getParsedBodyParam('user');
     $errors = $validator->validate($user, $users);
-
     if (count($errors) === 0) {
         $user['id'] = ($users[count($users) - 1]['id'] ?? 0) + 1;
         $users[] = $user;
@@ -107,10 +118,8 @@ $app->post('/users', function ($request, $response) use ($database, $router, $va
         $this->get('flash')->addMessage('success', 'User was added successfully');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
-
     $params = ['user' => $user, 'errors' => $errors];
     $errorResponse = $response->withStatus(422);
-
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
 
@@ -119,9 +128,9 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($dat
     $editableUser = $database->findUser($id);
     $users = $database->loadUsers();
     $data = $request->getParsedBodyParam('user');
-
-    $errors = $validator->validate($data, $users);
-
+    $usersWithoutEditableUser = $users;
+    unset($usersWithoutEditableUser[array_search($editableUser, $users)]);
+    $errors = $validator->validate($data, $usersWithoutEditableUser);
     if (count($errors) === 0) {
         $editableUserKey = array_search($editableUser, $users);
         $editableUser['nickname'] = $data['nickname'];
@@ -131,24 +140,29 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($dat
         $this->get('flash')->addMessage('success', 'User has been updated');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
-
     $params = ['user' => $editableUser,'errors' => $errors];
-
     $response = $response->withStatus(422);
     return $this->get('renderer')->render($response, 'users/edit.phtml', $params);
 });
 
 $app->delete('/users/{id}', function ($request, $response, array $args) use ($database, $router) {
-    $id = $args['id'];
-    $deletableUser = $database->findUser($id);
-    $users = $database->loadUsers();
-    unset($users[array_search($deletableUser, $users)]);
-    $database->saveUsers([...$users]);
-    $this->get('flash')->addMessage('success', 'User has been deleted');
+    $confirmation = $request->getParsedBodyParam('confirmation');
+    if ($confirmation === 'yes') {
+        $id = $args['id'];
+        $deletableUser = $database->findUser($id);
+        $users = $database->loadUsers();
+        unset($users[array_search($deletableUser, $users)]);
+        $database->saveUsers([...$users]);
+        $this->get('flash')->addMessage('success', 'User has been deleted');
+    }
     return $response->withRedirect($router->urlFor('showUsers'));
 });
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($database, $router) {
+    if ($_SESSION['user'] === null) {
+        $this->get('flash')->addMessage('error', 'Not logged in!');
+        return $response->withRedirect($router->urlFor('login'), 302);
+    }
     $id = $args['id'];
     $user = $database->findUser($id);
     if ($user) {
@@ -159,6 +173,10 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($database, $
 })->setName('showUser');
 
 $app->get('/users/{id}/edit', function ($request, $response, array $args) use ($database, $router) {
+    if ($_SESSION['user'] === null) {
+        $this->get('flash')->addMessage('error', 'Not logged in!');
+        return $response->withRedirect($router->urlFor('login'), 302);
+    }
     $id = $args['id'];
     $user = $database->findUser($id);
     if ($user) {
