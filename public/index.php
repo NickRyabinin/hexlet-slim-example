@@ -1,5 +1,7 @@
 <?php
 
+namespace User\Crud;
+
 require __DIR__ . '/../vendor/autoload.php';
 
 use Slim\Factory\AppFactory;
@@ -25,11 +27,47 @@ $router = $app->getRouteCollector()->getRouteParser();
 
 $database = new Database();
 $validator = new Validator();
+$admins = [
+    ['name' => 'admin', 'password' => hash('sha256', 'admin')]
+];
 
 $app->get('/', function ($request, $response) {
-    $response->getBody()->write('Welcome to Slim!');
-    return $response;
-})->setName('main');
+    $flash = $this->get('flash')->getMessages();
+    $params = [
+        'currentUser' => $_SESSION['user'] ?? null,
+        'flash' => $flash
+    ];
+    return $this->get('renderer')->render($response, 'users/login.phtml', $params);
+})->setName('login');
+
+$app->post('/session', function ($request, $response) use ($admins, $router) {
+    $userCredentials = $request->getParsedBodyParam('user');
+    $isFormCompleted = !empty($userCredentials['name']) && !empty($userCredentials['password']);
+    if ($isFormCompleted) {
+        $isUserAuthorized = false;
+        foreach ($admins as $user) {
+            if (
+                $user['name'] === $userCredentials['name'] &&
+                $user['password'] === hash('sha256', $userCredentials['password'])
+            ) {
+                $_SESSION['user'] = $user;
+                $isUserAuthorized = true;
+                break;
+            }
+        }
+        if (!$isUserAuthorized) {
+            $this->get('flash')->addMessage('error', 'Wrong password or name');
+            return $response->withRedirect($router->urlFor('login'), 302);
+        }
+    }
+    return $response->withRedirect($router->urlFor('showUsers'), 302);
+});
+
+$app->delete('/session', function ($request, $response) use ($router) {
+    $_SESSION = [];
+    session_destroy();
+    return $response->withRedirect($router->urlFor('login'), 302);
+});
 
 $app->get('/user404', function ($request, $response) {
     return $response->write('This user does not exist!');
