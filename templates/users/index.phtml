@@ -7,6 +7,13 @@
       <?php endforeach ?>
     </div>
 <?php endif ?>
+<div>
+  <form action="/session" method="post">
+    <input type="hidden" name="_METHOD" value="DELETE">
+    <input type="submit" value="Log Out">
+  </form>
+</div>
+<hr>
 <form action="/users" method="get">
   <input type="search" name="term" value="<?= htmlspecialchars($term) ?>" />
   <input type="submit" value="Search" />
