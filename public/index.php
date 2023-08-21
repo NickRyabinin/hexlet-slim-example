@@ -109,16 +109,19 @@ $app->get('/users/new', function ($request, $response) use ($router) {
 
 $app->post('/users', function ($request, $response) use ($database, $router, $validator) {
     $users = $database->loadUsers();
-    $user = $request->getParsedBodyParam('user');
-    $errors = $validator->validate($user, $users);
+    $data = $request->getParsedBodyParam('data');
+    $normalizedData['nickname'] = htmlspecialchars(trim($data['nickname']));
+    $normalizedData['email'] = htmlspecialchars(strtolower(trim($data['email'])));
+    $errors = $validator->validate($normalizedData, $users);
     if (count($errors) === 0) {
+        $user = $normalizedData;
         $user['id'] = ($users[count($users) - 1]['id'] ?? 0) + 1;
         $users[] = $user;
         $database->saveUsers($users);
         $this->get('flash')->addMessage('success', 'User was added successfully');
         return $response->withRedirect($router->urlFor('showUsers'), 302);
     }
-    $params = ['user' => $user, 'errors' => $errors];
+    $params = ['user' => $normalizedData, 'errors' => $errors];
     $errorResponse = $response->withStatus(422);
     return $this->get('renderer')->render($errorResponse, "users/new.phtml", $params);
 })->setName('saveUser');
@@ -127,14 +130,16 @@ $app->patch('/users/{id}', function ($request, $response, array $args) use ($dat
     $id = $args['id'];
     $editableUser = $database->findUser($id);
     $users = $database->loadUsers();
-    $data = $request->getParsedBodyParam('user');
+    $data = $request->getParsedBodyParam('data');
+    $normalizedData['nickname'] = htmlspecialchars(trim($data['nickname']));
+    $normalizedData['email'] = htmlspecialchars(strtolower(trim($data['email'])));
+    $normalizedData['id'] = $editableUser['id'];
     $usersWithoutEditableUser = $users;
     unset($usersWithoutEditableUser[array_search($editableUser, $users)]);
-    $errors = $validator->validate($data, $usersWithoutEditableUser);
+    $errors = $validator->validate($normalizedData, $usersWithoutEditableUser);
     if (count($errors) === 0) {
         $editableUserKey = array_search($editableUser, $users);
-        $editableUser['nickname'] = $data['nickname'];
-        $editableUser['email'] = $data['email'];
+        $editableUser = $normalizedData;
         $users[$editableUserKey] = $editableUser;
         $database->saveUsers($users);
         $this->get('flash')->addMessage('success', 'User has been updated');
