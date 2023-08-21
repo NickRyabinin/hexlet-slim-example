@@ -7,7 +7,7 @@
 Посмотреть проект можно [по этой ссылке](https://hexlet-slim-example-production-6644.up.railway.app/).
 
 ### Требования:
-php >= 8
+php >= 8.1
 
 composer
 
