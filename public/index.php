@@ -78,7 +78,7 @@ $app->get('/users', function ($request, $response) use ($database, $router) {
         $this->get('flash')->addMessage('error', 'Not logged in!');
         return $response->withRedirect($router->urlFor('login'), 302);
     }
-    $term = $request->getQueryParam('term');
+    $term = $request->getQueryParam('term') ?? '';
     $users = $database->loadUsers();
     $usersTotal = count($users);
     $callback = fn($user) => str_contains($user['nickname'], $term);
