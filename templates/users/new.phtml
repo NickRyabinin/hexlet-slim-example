@@ -4,7 +4,7 @@
   <div>
     <label>
         *Nickname:
-      <input type="text" name="user[nickname]" value="<?= htmlspecialchars($user['nickname']) ?>">
+      <input type="text" name="data[nickname]" value="<?= htmlspecialchars($user['nickname']) ?>">
     </label>
     <?php if (isset($errors['nickname'])): ?>
       <div><?= $errors['nickname'] ?></div>
@@ -13,7 +13,7 @@
   <div>
     <label>
       *Email:&ensp;&ensp;&ensp;&thinsp;
-      <input type="email" name="user[email]" value="<?= htmlspecialchars($user['email']) ?>">
+      <input type="email" name="data[email]" value="<?= htmlspecialchars($user['email']) ?>">
     </label>
     <?php if (isset($errors['email'])): ?>
       <div><?= $errors['email'] ?></div>
