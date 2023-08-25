@@ -74,7 +74,7 @@ $app->get('/user404', function ($request, $response) {
 })->setName('404');
 
 $app->get('/users', function ($request, $response) use ($database, $router) {
-    if ($_SESSION['user'] === null) {
+    if (!array_key_exists('user', $_SESSION) || $_SESSION['user'] === null) {
         $this->get('flash')->addMessage('error', 'Not logged in!');
         return $response->withRedirect($router->urlFor('login'), 302);
     }
@@ -96,7 +96,7 @@ $app->get('/users', function ($request, $response) use ($database, $router) {
 })->setName('showUsers');
 
 $app->get('/users/new', function ($request, $response) use ($router) {
-    if ($_SESSION['user'] === null) {
+    if (!array_key_exists('user', $_SESSION) || $_SESSION['user'] === null) {
         $this->get('flash')->addMessage('error', 'Not logged in!');
         return $response->withRedirect($router->urlFor('login'), 302);
     }
@@ -164,7 +164,7 @@ $app->delete('/users/{id}', function ($request, $response, array $args) use ($da
 });
 
 $app->get('/users/{id}', function ($request, $response, $args) use ($database, $router) {
-    if ($_SESSION['user'] === null) {
+    if (!array_key_exists('user', $_SESSION) || $_SESSION['user'] === null) {
         $this->get('flash')->addMessage('error', 'Not logged in!');
         return $response->withRedirect($router->urlFor('login'), 302);
     }
@@ -178,7 +178,7 @@ $app->get('/users/{id}', function ($request, $response, $args) use ($database, $
 })->setName('showUser');
 
 $app->get('/users/{id}/edit', function ($request, $response, array $args) use ($database, $router) {
-    if ($_SESSION['user'] === null) {
+    if (!array_key_exists('user', $_SESSION) || $_SESSION['user'] === null) {
         $this->get('flash')->addMessage('error', 'Not logged in!');
         return $response->withRedirect($router->urlFor('login'), 302);
     }
